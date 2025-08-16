@@ -1,14 +1,12 @@
 use std::io;
 
+mod stateful_list;
+
 use ratatui::{
     DefaultTerminal, Frame,
-    buffer::Buffer,
     crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     layout::Rect,
-    style::Stylize,
-    symbols::border,
-    text::{Line, Text},
-    widgets::{Block, List, ListState, Paragraph, Widget},
+    widgets::{List, ListItem, ListState},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -27,6 +25,9 @@ struct TodoItem {
 struct App {
     should_exit: bool,
     todo_list: Vec<TodoItem>,
+
+    // Render state
+    render_list_state: ListState,
 }
 
 fn main() -> io::Result<()> {
@@ -43,7 +44,10 @@ fn main() -> io::Result<()> {
                 name: "Do stuff 2".to_string(),
             },
         ],
+        render_list_state: ListState::default(),
     };
+
+    app.render_list_state.select(Some(0));
 
     let res = app.run(&mut terminal);
 
@@ -61,21 +65,18 @@ impl App {
         Ok(())
     }
 
-    fn draw(&self, frame: &mut Frame) {
-        frame.render_widget(self, frame.area());
+    fn try_exit(&mut self) {
+        self.should_exit = true;
     }
 
-    fn handle_key_event(&mut self, event: KeyEvent) {
-        match event.kind {
-            KeyEventKind::Press => match event.code {
-                KeyCode::Char('q') | KeyCode::Char('Q') => {
-                    self.should_exit = true;
-                }
-                _ => (),
-            },
-            KeyEventKind::Repeat => (),
-            KeyEventKind::Release => (),
-        }
+    fn draw(&mut self, frame: &mut Frame) {
+        self.draw_list(frame, frame.area());
+    }
+
+    fn draw_list(&mut self, frame: &mut Frame, area: Rect) {
+        let todos = List::new(self.todo_list.iter().map(|f| ListItem::new(f.name.clone())))
+            .highlight_symbol(">> ");
+        frame.render_stateful_widget(todos, area, &mut self.render_list_state);
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
@@ -89,7 +90,19 @@ impl App {
         };
         Ok(())
     }
+
+    fn handle_key_event(&mut self, event: KeyEvent) {
+        match event.kind {
+            KeyEventKind::Press => match event.code {
+                KeyCode::Char('q') | KeyCode::Char('Q') => self.try_exit(),
+                _ => (),
+            },
+            KeyEventKind::Repeat => (),
+            KeyEventKind::Release => (),
+        }
+    }
 }
+/*
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
@@ -107,9 +120,7 @@ impl Widget for &App {
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        let list = List::new(self.todo_list.iter().map(|f| stringify!(f)));
-
-        list.block(block).render(area, buf);
+        // list.block(block).render(area, buf);
 
         /*
         // Put the paragraph into the block
@@ -120,3 +131,4 @@ impl Widget for &App {
         */
     }
 }
+*/
