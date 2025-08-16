@@ -22,11 +22,27 @@ struct TodoItem {
     // status: TodoStatus,
 }
 
+struct TypingMode {
+    cursor_position: u32,
+    new_data: String,
+}
+
+struct StandardMode {}
+
+#[derive(Default)]
+enum AppMode {
+    #[default]
+    StandardMode,
+
+    TypingMode,
+}
+
 struct App {
     should_exit: bool,
     todo_list: Vec<TodoItem>,
 
     // Render state
+    mode: AppMode,
     render_list_state: ListState,
 }
 
@@ -43,8 +59,12 @@ fn main() -> io::Result<()> {
             TodoItem {
                 name: "Do stuff 2".to_string(),
             },
+            TodoItem {
+                name: "Do stuff 3".to_string(),
+            },
         ],
         render_list_state: ListState::default(),
+        mode: Default::default(),
     };
 
     app.render_list_state.select(Some(0));
@@ -80,18 +100,24 @@ impl App {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        match event::read()? {
+        if let Event::Key(event) = event::read()? {
+            match self.mode {
+                AppMode::StandardMode => self.standard_handle_key_event(event),
+                AppMode::TypingMode => todo!(),
+            };
+        }
+        Ok(())
+    }
+
+    fn standard_handle_key_event(&mut self, event: KeyEvent) {
+        /*
             // it's important to check that the event is a key press event as
             // crossterm also emits key release and repeat events on Windows.
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 self.handle_key_event(key_event)
             }
-            _ => {}
-        };
-        Ok(())
-    }
+        */
 
-    fn handle_key_event(&mut self, event: KeyEvent) {
         match event.kind {
             KeyEventKind::Press => match event.code {
                 KeyCode::Char('q') | KeyCode::Char('Q') => self.try_exit(),
@@ -110,7 +136,7 @@ impl App {
             },
             KeyEventKind::Repeat => (),
             KeyEventKind::Release => (),
-        }
+        };
     }
 }
 /*
