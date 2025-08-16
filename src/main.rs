@@ -3,12 +3,12 @@ use std::io;
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
-    crossterm::event::{self, Event, KeyEvent, KeyEventKind},
+    crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     layout::Rect,
     style::Stylize,
     symbols::border,
     text::{Line, Text},
-    widgets::{Block, ListState, Paragraph, Widget},
+    widgets::{Block, List, ListState, Paragraph, Widget},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -19,19 +19,14 @@ enum TodoStatus {
 
 #[derive(Debug)]
 struct TodoItem {
-    todo: String,
-    info: String,
-    status: TodoStatus,
-}
-
-struct TodoList {
-    items: Vec<TodoItem>,
-    state: ListState,
+    name: String,
+    // info: String,
+    // status: TodoStatus,
 }
 
 struct App {
     should_exit: bool,
-    todo_list: TodoList,
+    todo_list: Vec<TodoItem>,
 }
 
 fn main() -> io::Result<()> {
@@ -40,10 +35,14 @@ fn main() -> io::Result<()> {
 
     let mut app = App {
         should_exit: false,
-        todo_list: TodoList {
-            items: vec![],
-            state: ListState::default(),
-        },
+        todo_list: vec![
+            TodoItem {
+                name: "Do stuff".to_string(),
+            },
+            TodoItem {
+                name: "Do stuff 2".to_string(),
+            },
+        ],
     };
 
     let res = app.run(&mut terminal);
@@ -63,13 +62,20 @@ impl App {
     }
 
     fn draw(&self, frame: &mut Frame) {
-        //
+        frame.render_widget(self, frame.area());
     }
 
     fn handle_key_event(&mut self, event: KeyEvent) {
-        if event.code == event::KeyCode::Esc {
-            self.should_exit = true;
-        };
+        match event.kind {
+            KeyEventKind::Press => match event.code {
+                KeyCode::Char('q') | KeyCode::Char('Q') => {
+                    self.should_exit = true;
+                }
+                _ => (),
+            },
+            KeyEventKind::Repeat => (),
+            KeyEventKind::Release => (),
+        }
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
@@ -101,15 +107,16 @@ impl Widget for &App {
             .title_bottom(instructions.centered())
             .border_set(border::THICK);
 
-        let counter_text = Text::from(vec![Line::from(vec![
-            "Value: ".into(),
-            // self.counter.to_string().yellow(),
-            "bruh".yellow(),
-        ])]);
+        let list = List::new(self.todo_list.iter().map(|f| stringify!(f)));
 
+        list.block(block).render(area, buf);
+
+        /*
+        // Put the paragraph into the block
         Paragraph::new(counter_text)
             .centered()
             .block(block)
             .render(area, buf);
+        */
     }
 }
