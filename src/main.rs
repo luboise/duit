@@ -4,7 +4,7 @@ mod stateful_list;
 
 use ratatui::{
     DefaultTerminal, Frame,
-    crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
+    crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
     layout::Rect,
     widgets::{List, ListItem, ListState},
 };
@@ -95,6 +95,17 @@ impl App {
         match event.kind {
             KeyEventKind::Press => match event.code {
                 KeyCode::Char('q') | KeyCode::Char('Q') => self.try_exit(),
+                KeyCode::Char('n') => {
+                    if event.modifiers.intersects(KeyModifiers::CONTROL) {
+                        self.render_list_state.select_next();
+                    }
+                }
+
+                KeyCode::Char('p') => {
+                    if event.modifiers.intersects(KeyModifiers::CONTROL) {
+                        self.render_list_state.select_previous();
+                    }
+                }
                 _ => (),
             },
             KeyEventKind::Repeat => (),
